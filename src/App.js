@@ -1,5 +1,4 @@
-import { isCursorAtEnd } from "@testing-library/user-event/dist/utils";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const initialFriends = [
   {
@@ -35,6 +34,10 @@ export default function App() {
   const [friends, setFriends] = useState(initialFriends);
   const [currSelect, setCurrSelect] = useState(null);
 
+  function handleBalance(balance) {
+    currSelect.balance = balance
+  }
+
   function handleAddFriend(friend) {
     setFriends((friends) => [...friends, friend]);
     setShowAddFriend(false);
@@ -62,7 +65,7 @@ export default function App() {
           {!showAddFriend ? <p>Add Friend</p> : <p>Close</p>}
         </Button>
       </div>
-      {currSelect && <FormSplitBill currSelect={currSelect} />}
+      {currSelect && <FormSplitBill currSelect={currSelect} onChangeBalance={handleBalance} />}
     </div>
   );
 }
@@ -149,19 +152,24 @@ function FormAddFriend({ onAddFriend }) {
   );
 }
 
-function FormSplitBill({ currSelect }) {
+function FormSplitBill({ currSelect, onChangeBalance }) {
   const [bill, setBill] = useState(0);
   const [selfExpense, setSelfExpense] = useState(0);
-  const [friendExpense, setFriendExpense] = useState();
+  const [friendExpense, setFriendExpense] = useState(0);
   const [paying, setPaying] = useState("user");
-  
-  const balance = selfExpense - friendExpense
 
+  useEffect(() => {
+    setSelfExpense(bill - friendExpense);
+  }, [bill, friendExpense]);
+
+  const balance = (selfExpense - friendExpense) / 2
   function handleBillSubmit(e) {
     e.preventDefault();
-    if(selfExpense>friendExpense){
-      
-    }
+    if (!bill || !selfExpense) return;
+    onChangeBalance(balance);
+    setBill(0)
+    setSelfExpense(0)
+    setFriendExpense(0)
   }
 
   return (
@@ -178,29 +186,38 @@ function FormSplitBill({ currSelect }) {
       <label>🧍 Your Expense</label>
       <input
         value={selfExpense}
-        onChange={(e) =>
-          setSelfExpense(Number(e.target.value) > bill
-            ? selfExpense
-            : Number(e.target.value))
-        }
+        onChange={(e) => {
+          const newSelfExpense = Number(e.target.value);
+          if (newSelfExpense <= bill) {
+            setSelfExpense(newSelfExpense);
+            setFriendExpense(bill - newSelfExpense);
+          }
+        }}
         type="number"
-        disabled={(paying === `${currSelect.id}`)}
+        disabled={paying === `${currSelect.id}`}
       />
 
       <label>👬 {currSelect.name}'s Expense</label>
       <input
         value={friendExpense}
-        onChange={(e)=>setFriendExpense(Number(e.target.value)>bill?friendExpense:Number(e.target.value))}
+        onChange={(e) => {
+          const newFriendExpense = Number(e.target.value);
+          if (newFriendExpense <= bill) {
+            setFriendExpense(newFriendExpense);
+            setSelfExpense(bill - newFriendExpense);
+          }
+        }}
         type="number"
-        disabled={(paying === "user")}
+        disabled={paying === "user"}
       />
+
 
       <label>🤑 Who is paying the bill?</label>
       <select onChange={(e) => setPaying(e.target.value)}>
         <option value="user">You</option>
         <option value={`${currSelect.id}`}>{currSelect.name}</option>
       </select>
-      <Button>Add</Button>
+      <Button type="submit">Split BIll</Button>
     </form>
   );
 }
