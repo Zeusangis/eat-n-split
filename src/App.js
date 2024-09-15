@@ -34,8 +34,14 @@ export default function App() {
   const [friends, setFriends] = useState(initialFriends);
   const [currSelect, setCurrSelect] = useState(null);
 
-  function handleBalance(balance) {
-    currSelect.balance = balance
+  function handleBalanceChange(newBalance) {
+    setFriends((friends) =>
+      friends.map((friend) =>
+        friend.id === currSelect.id
+          ? { ...friend, balance: friend.balance + newBalance }
+          : friend
+      )
+    );
   }
 
   function handleAddFriend(friend) {
@@ -65,7 +71,7 @@ export default function App() {
           {!showAddFriend ? <p>Add Friend</p> : <p>Close</p>}
         </Button>
       </div>
-      {currSelect && <FormSplitBill currSelect={currSelect} onChangeBalance={handleBalance} />}
+      {currSelect && <FormSplitBill currSelect={currSelect} onChangeBalance={handleBalanceChange} />}
     </div>
   );
 }
@@ -162,14 +168,14 @@ function FormSplitBill({ currSelect, onChangeBalance }) {
     setSelfExpense(bill - friendExpense);
   }, [bill, friendExpense]);
 
-  const balance = (selfExpense - friendExpense) / 2
+  const newBalance = (selfExpense - friendExpense) / 2
   function handleBillSubmit(e) {
     e.preventDefault();
     if (!bill || !selfExpense) return;
-    onChangeBalance(balance);
+    onChangeBalance(newBalance);
     setBill(0)
-    setSelfExpense(0)
     setFriendExpense(0)
+    setSelfExpense(0)
   }
 
   return (
@@ -217,7 +223,7 @@ function FormSplitBill({ currSelect, onChangeBalance }) {
         <option value="user">You</option>
         <option value={`${currSelect.id}`}>{currSelect.name}</option>
       </select>
-      <Button type="submit">Split BIll</Button>
+      <Button>Split BIll</Button>
     </form>
   );
 }
